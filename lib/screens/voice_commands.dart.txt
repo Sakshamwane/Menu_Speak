@@ -1,0 +1,103 @@
+import 'package:flutter/material.dart';
+import 'package:speech_recognition/speech_recognition.dart';
+
+class VoiceCommandsScreen extends StatefulWidget {
+  @override
+  _VoiceCommandsScreenState createState() => _VoiceCommandsScreenState();
+}
+
+class _VoiceCommandsScreenState extends State<VoiceCommandsScreen> {
+  SpeechRecognition _speech;
+  bool _isListening = false;
+  String _resultText = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _speech = SpeechRecognition();
+    _speech.setAvailabilityHandler((bool available) {
+      setState(() {
+        _isListening = available;
+      });
+    });
+    _speech.setRecognitionStartedHandler(() {
+      setState(() {
+        _isListening = true;
+        _resultText = "";
+      });
+    });
+    _speech.setRecognitionResultHandler((String text) {
+      setState(() {
+        _resultText = text;
+      });
+    });
+    _speech.setRecognitionCompleteHandler(() {
+      setState(() {
+        _isListening = false;
+      });
+      // Handle the recognized command here (e.g., query menu items).
+      handleVoiceCommand(_resultText);
+    });
+  }
+
+  void handleVoiceCommand(String command) {
+    // Implement logic to process the voice command here.
+    // For example, you can search for menu items or their prices based on the command.
+    // You may need to integrate this with your existing menu data and logic.
+
+    // For simplicity, let's just print the recognized command.
+    print("Voice command: $command");
+  }
+
+  void startListening() {
+    _speech.listen().then((result) {
+      if (result) {
+        setState(() {
+          _isListening = true;
+        });
+      }
+    });
+  }
+
+  void stopListening() {
+    _speech.stop().then((result) {
+      setState(() {
+        _isListening = false;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Voice Commands'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(_resultText),
+            SizedBox(height: 20),
+            _isListening
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: startListening,
+                    child: Text("Start Listening"),
+                  ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _isListening ? stopListening : startListening,
+        child: Icon(_isListening ? Icons.mic : Icons.mic_none),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _speech.cancel();
+    super.dispose();
+  }
+}
