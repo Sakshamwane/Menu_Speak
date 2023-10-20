@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Blind Dine',
       theme: ThemeData(
+        scaffoldBackgroundColor: Colors.grey[350],
         primarySwatch: Colors.blue,
       ),
       initialRoute: '/',

@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:edge_detection/edge_detection.dart';
+import 'package:path/path.dart'; 
+import 'package:path_provider/path_provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class TextRecognitionScreen extends StatefulWidget {
   @override
@@ -12,42 +18,77 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
   FlutterTts flutterTts = FlutterTts();
   final ImagePicker _imagePicker = ImagePicker();
   late String recognizedText = '';
-  late String sequentialText='';
+  late String sequentialText='\n • Scan/Select Menu \n\n • Listen Menu Items \n\n • Make Your Choice';
 
-  Future<void> speakText(String text) async {
-  await flutterTts.setLanguage("en-US"); // Set the language (adjust as needed)   
-  await flutterTts.speak(text);
+   Future<void> _pickImage(ImageSource source) async {
+    
+    String imagePath = ''; 
+
+  try {
+  // Generate a filepath for saving the captured image
+    imagePath = join(
+    (await getApplicationSupportDirectory()).path,
+    "${DateTime.now().millisecondsSinceEpoch ~/ 1000}.jpeg",
+  );
+
+  // Use the Edge Detection package to capture and process the image
+  bool success = await EdgeDetection.detectEdge(
+    imagePath,
+    canUseGallery: true,
+    androidScanTitle: 'Scanning', 
+    androidCropTitle: 'Crop',
+    androidCropBlackWhiteTitle: 'Black White',
+    androidCropReset: 'Reset',
+  );
+
+  if (success) {
+    print("Edge detection successful");
+    // After successful edge detection, call text recognition on the processed image
+   await _processImageForTextRecognition(imagePath);
   }
+  } catch (e) {
+      print("Error during edge detection: $e");
+  }
+}
 
-  Future<void> _pickImage(ImageSource source) async {
-    this.recognizedText = '';
-    final image = await _imagePicker.pickImage(source: source);
+  Future<void> _processImageForTextRecognition(String imagePath) async {
+  // Create an instance of the text recognizer
+    final textRecognizer = GoogleMlKit.vision.textRecognizer();
 
-    if (image == null) return;
+  try {
 
-    final inputImage = InputImage.fromFilePath(image.path);
-    final textDetector = GoogleMlKit.vision.textRecognizer();
+    String text = " ";
+    // Create a FirebaseVisionImage from the image path
+    final inputImage = InputImage.fromFilePath(imagePath);
 
-    final RecognizedText text = await textDetector.processImage(inputImage);
-    String recognizedText = '';
+    // Process the image to extract text
+    final recognizedText = await textRecognizer.processImage(inputImage);
 
-    for (TextBlock block in text.blocks) {
+    // Extract and handle the recognized text
+    for (TextBlock block in recognizedText.blocks) {
       for (TextLine line in block.lines) {
-        // recognizedText += line.text + '\n';
         for(TextElement element in line.elements){
-          recognizedText += element.text;
+          text += element.text;
+          print("Recognized Text: $text");
         }
-        recognizedText+='\n';
+        text += '\n';
       }
     }
 
     setState(() {
-      this.recognizedText = recognizedText;
+      this.recognizedText = text;
     });
-
-    textDetector.close();
+    print("Text recognition successful");
+  } catch (e) {
+    print("Text Recognition Error: $e");
+  } finally {
+    // Clean up the text recognizer when done
+    await textRecognizer.close();
     await processRecognizedText();
   }
+}
+
+  // Define a function to perform text recognition on the processed image
 
   //Processing Text:
   Future<void> processRecognizedText() async {
@@ -86,8 +127,6 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
     }
   }
 
-
-
     // Create a map pairing menu items with their prices
     Map<String, String> menuItemsAndPrices = {};
 
@@ -98,25 +137,66 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
 
     // Generate sequential text and speak it
     final String sequentialText = menuItemsAndPrices.entries.map((entry) => '${entry.key} - ${entry.value}').join('\n');
-    // print('Sequential Text: $sequentialText'); // Add this line
+    print('Sequential Text: $sequentialText'); 
+    print("Text processing successful");
+
 
     setState(() {
-      // Set the sequentialText state to trigger a rebuild of the widget
       this.sequentialText = sequentialText;
     });
   }
+
+  Future<void> speakText(String text) async {
+  await flutterTts.setLanguage("en-US");    
+  await flutterTts.speak(text);
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Blind Dine')),
       body: Center(
-        child: Column(
+
+        child: 
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 10),
+            const Text("Welcome, ",
+            textAlign: TextAlign.left,
+            style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 32,
+                      color: Colors.black,
+                      
+                    ),
+            ),
+            const SizedBox(height: 20),
+            Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              height: 500,
-              width: 300,
+              height: 110,
+              width: 400,
+              padding: EdgeInsets.all(20),
+              child: 
+              const Text("Exploring Menus Made Simple", 
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                      fontSize: 30,
+                      color: Colors.white,
+                    ),
+              ),
+              decoration: const BoxDecoration(
+              color: Colors.blueAccent,
+              borderRadius: BorderRadius.all(Radius.circular(30))
+            ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              height: 300,
+              width: 400,
               decoration: const BoxDecoration(
                 color: Colors.blueGrey,
                 borderRadius: BorderRadius.only(
@@ -128,37 +208,74 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
               ),
               child: 
                   Center(
-                    child: Expanded(child: SingleChildScrollView(
+                    child: Expanded(
+                      child: SingleChildScrollView(
                     scrollDirection: Axis.vertical,
                     child: Text(sequentialText,
-                    style: TextStyle(
-                      fontSize: 18,
+                    style: const TextStyle(
+                      fontSize: 24,
                       color: Colors.white,
-                      
-                    ),
                     ),)),
                   ),
+              ),
             ),
+
             const SizedBox(height: 20),
             //Speak button
-            ElevatedButton(
-              onPressed: () {
-              speakText(sequentialText);
-            },
-            child: const Text('Speak Recognized Text'),
+            Container(
+            height: 60,
+            width: 250,
+            child: ElevatedButton.icon(
+              icon: const Icon(
+                Icons.mic,
+                color: Colors.black,
+                size: 40,
+              ),
+              label: const Text("Speak Text",
+              style: const TextStyle(
+                      fontSize: 28,
+                      color: Colors.white,
+                    ),),
+              onPressed: (){ speakText(sequentialText);},
+              style: ButtonStyle(
+                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+    )
+  )
+)
             ),
-            //Pick image button
-            ElevatedButton(
-              onPressed: (){ _pickImage(ImageSource.gallery);},
-              child: const Text('Pick Image from Gallery'),
-            ),
-            //Capture image button
-            ElevatedButton(
+          ),
+            const SizedBox(height: 15),
+           Container(
+            height: 60,
+            width: 250,
+            child: ElevatedButton.icon(
+              icon: const Icon(
+                Icons.camera_enhance,
+                color: Colors.black,
+                size: 40,
+              ),
+              label: const Text("Get Image",
+              style: const TextStyle(
+                      fontSize: 28,
+                      color: Colors.white,
+                    ),),
               onPressed: (){ _pickImage(ImageSource.camera);},
-              child: const Text('Capture Image from Camera'),
+              style: ButtonStyle(
+                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+    )
+  )
+)
             ),
+          ),
           ],
         ),
+          ],
+        )
+        
       ),
     );
   }
