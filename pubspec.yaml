@@ -41,6 +41,7 @@ dependencies:
   google_ml_kit: ^0.16.2
   image_picker: ^1.0.2
   flutter_tts: ^3.0.0
+  speech_to_text: ^6.0.0
   edge_detection: ^1.1.2
   path: ^1.8.0  
   path_provider: ^2.0.3

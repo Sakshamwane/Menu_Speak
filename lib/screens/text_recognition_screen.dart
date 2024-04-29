@@ -9,6 +9,8 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import 'MenuPriceSearchScreen.dart';
+
 class TextRecognitionScreen extends StatefulWidget {
   @override
   _TextRecognitionScreenState createState() => _TextRecognitionScreenState();
@@ -18,7 +20,10 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
   FlutterTts flutterTts = FlutterTts();
   final ImagePicker _imagePicker = ImagePicker();
   late String recognizedText = '';
-  late String sequentialText='\n • Scan/Select Menu \n\n • Listen Menu Items \n\n • Make Your Choice';
+  late String sequentialText='';
+  // Create a map pairing menu items with their prices
+    Map<String, String> menuItemsAndPrices = {};
+  
 
    Future<void> _pickImage(ImageSource source) async {
     
@@ -88,9 +93,7 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
   }
 }
 
-  // Define a function to perform text recognition on the processed image
-
-  //Processing Text:
+  
   Future<void> processRecognizedText() async {
     this.sequentialText='';
     int uppercaseLineCount = 0; 
@@ -127,8 +130,7 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
     }
   }
 
-    // Create a map pairing menu items with their prices
-    Map<String, String> menuItemsAndPrices = {};
+    menuItemsAndPrices.clear();
 
     // Create a map pairing menu items with their prices
     for (int i = 0; i < menuItems.length; i++) {
@@ -155,48 +157,101 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Blind Dine')),
-      body: Center(
+      appBar: AppBar(title: Text('Menu Speak'),
+
+      leading: IconButton(
+      icon: Icon(Icons.menu),
+      onPressed: () {
+        Scaffold.of(context).openEndDrawer(); // Open the menu drawer.
+      },
+    ),
+    
+    ),
+         endDrawer: Drawer(
+    child: ListView(
+      padding: EdgeInsets.zero,
+      children: <Widget>[
+        DrawerHeader(
+          decoration: BoxDecoration(
+            color: Colors.blue,
+          ),
+          child: Text('Menu'),
+        ),
+        ListTile(
+          title: Text('Home'),
+          onTap: () {
+            // Navigate to the TextRecognitionScreen.
+    Navigator.of(context).pop(); // Close the drawer.
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => TextRecognitionScreen()),
+    );
+          },
+        ),
+        ListTile(
+          title: Text('Search'),
+          onTap: () {
+            Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => MenuPriceSearchScreen(menuItemsAndPrices: menuItemsAndPrices),
+  ),
+);
+
+          },
+        ),
+        // Add more ListTile widgets for additional menu options.
+      ],
+    ),
+  ),
+
+      body: 
+      Builder(
+    builder: (BuildContext context) {
+      return Center(
 
         child: 
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 10),
-            const Text("Welcome, ",
-            textAlign: TextAlign.left,
-            style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 32,
-                      color: Colors.black,
-                      
+            // const SizedBox(height: 15),
+            Container(
+              margin: EdgeInsets.all(10),
+              child: const Text("Welcome, ",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 32,
+                        color: Colors.black,
                     ),
             ),
-            const SizedBox(height: 20),
+            ),
+            // const SizedBox(height: 10),
             Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              height: 110,
+              height: 70,
               width: 400,
-              padding: EdgeInsets.all(20),
+              // padding: EdgeInsets.all(10),
+              margin: EdgeInsets.all(10),
               child: 
               const Text("Exploring Menus Made Simple", 
               textAlign: TextAlign.left,
               style: TextStyle(
-                      fontSize: 30,
-                      color: Colors.white,
+                      fontSize: 28,
+                      color: Colors.black,
                     ),
               ),
               decoration: const BoxDecoration(
-              color: Colors.blueAccent,
               borderRadius: BorderRadius.all(Radius.circular(30))
             ),
             ),
-            const SizedBox(height: 20),
+            // const SizedBox(height: 25),
             Container(
               height: 300,
               width: 400,
+              margin: EdgeInsets.all(5),
               decoration: const BoxDecoration(
                 color: Colors.blueGrey,
                 borderRadius: BorderRadius.only(
@@ -213,31 +268,44 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
                     scrollDirection: Axis.vertical,
                     child: Text(sequentialText,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       color: Colors.white,
                     ),)),
                   ),
               ),
             ),
 
-            const SizedBox(height: 20),
-            //Speak button
-            Container(
-            height: 60,
+            // const SizedBox(height: 60),
+
+           Container(
+            height: 180,
+            width: 400,
+            margin: EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Colors.blueAccent,
+              borderRadius: BorderRadius.all(Radius.circular(30))
+            ),
+
+            child:  Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+              Container(
+            height: 50,
             width: 250,
             child: ElevatedButton.icon(
               icon: const Icon(
-                Icons.mic,
+                Icons.headset_rounded,
                 color: Colors.black,
                 size: 40,
               ),
               label: const Text("Speak Text",
               style: const TextStyle(
                       fontSize: 28,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),),
               onPressed: (){ speakText(sequentialText);},
               style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(Colors.white),
                 shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                 RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -246,9 +314,9 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
 )
             ),
           ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 30),
            Container(
-            height: 60,
+            height: 50,
             width: 250,
             child: ElevatedButton.icon(
               icon: const Icon(
@@ -259,10 +327,11 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
               label: const Text("Get Image",
               style: const TextStyle(
                       fontSize: 28,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),),
               onPressed: (){ _pickImage(ImageSource.camera);},
               style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(Colors.white),
                 shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                 RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -271,12 +340,18 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
 )
             ),
           ),
+            ],),
+           )
+            
           ],
         ),
           ],
         )
         
-      ),
+      ); 
+      },
+  ),
+   
     );
   }
 }

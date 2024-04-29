@@ -1,3 +1,4 @@
+import 'package:Blind_Dine/screens/MenuPriceSearchScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:Blind_Dine/screens/text_recognition_screen.dart';
@@ -13,12 +14,12 @@ void main() async {
 class MyApp extends StatelessWidget {
   final List<CameraDescription> cameras;
 
-  MyApp(this.cameras);
+  const MyApp(this.cameras);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Blind Dine',
+      title: 'Menu Speak',
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.grey[350],
         primarySwatch: Colors.blue,
@@ -27,7 +28,10 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => TextRecognitionScreen(),
         '/camera': (context) => CameraScreen(cameras),
-      },
+        '/search': (context)  {
+          final Map<String, String> menuItemsAndPrices =
+      ModalRoute.of(context)!.settings.arguments as Map<String, String>;return MenuPriceSearchScreen(menuItemsAndPrices: menuItemsAndPrices);
+      },}
     );
   }
 }
